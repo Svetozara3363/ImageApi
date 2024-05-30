@@ -14,7 +14,7 @@ import (
 const uploadDir = "./uploads"
 
 func main() {
-	// Создаем директорию uploads, если она не существует
+	// Создаем директорию uploads, если её нет 
 	if _, err := os.Stat(uploadDir); os.IsNotExist(err) {
 		os.Mkdir(uploadDir, os.ModePerm)
 	}
