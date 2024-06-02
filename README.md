@@ -1,38 +1,66 @@
 # Image API
-Этот проект  API для загрузки, получения и удаления изображений с использованием Go и Gorilla Mux.
-## Запуск сервера
-go run main.go
 
-1 . Откройте браузер и перейдите по адресу http://localhost:8080/.
-## Метод: GET
-Описание: Возвращает HTML-форму для загрузки изображения.
-Пример запроса:
-Загрузка изображения
+Base URL
+http://dokalab.com
+
+Endpoints
+# 1. Upload Image
 URL: /upload
-## Метод: POST
-Описание: Загружает изображение на сервер.
-Параметры: Принимает файл изображения с ключом picture в форме данных.
-Пример запроса: curl -X POST -F 'picture=@/path/to/your/image.png' http://localhost:8080/upload
+Method: POST
+Description: Uploads an image to the server.
 
-Пример ответа:
-arduino
-Файл успешно загружен: image.png
-Получение изображения
+Example Request:
+bash
+curl -F "picture=@path_to_your_image" http://dokalab.com/upload
+
+Response:
+Status Code: 200 OK
+Body: Confirmation message with the filename.
+
+# 2. Get Image
 URL: /picture/{filename}
-## Метод: GET
-Описание: Возвращает изображение с сервера.
-Параметры:
-filename - имя файла изображения.
-Пример запроса:
-curl http://localhost:8080/picture/image.png --output downloaded_image.png
-Пример ответа: Файл изображения.
-Удаление изображения
+Method: GET
+Description: Retrieves an image from the server by its filename.
+
+Example Request:
+bash
+curl http://dokalab.com/picture/your_image_name
+
+Response:
+Status Code: 200 OK
+Body: The image file.
+
+# 3. Delete Image
 URL: /picture/{filename}
-## Метод: DELETE
-Описание: Удаляет изображение с сервера.
-Параметры:
-filename - имя файла изображения.
-curl -X DELETE http://localhost:8080/picture/image.png
-Пример ответа:
-Файл успешно удален: image.png
-<img width="634" alt="Снимок экрана 2024-05-30 в 2 31 02 PM" src="https://github.com/Svetozara3363/ImageApi/assets/120119368/a474c8cc-02a5-44e2-afe4-0205b81b1590">
+Method: DELETE
+Description: Deletes an image from the server by its filename.
+
+Example Request:
+bash
+curl -X DELETE http://dokalab.com/picture/your_image_name
+
+Response:
+Status Code: 200 OK
+Body: Confirmation message indicating the file was deleted
+
+# Storage Location
+Uploaded images are stored in the ./uploads directory on the server until they are deleted by the user.
+
+# Logs
+Log files for the application and server are available for monitoring:
+
+Application logs: /var/log/myapp.log
+Nginx access logs: /var/log/nginx/access.log
+Nginx error logs: /var/log/nginx/error.log
+Example Log Viewing Commands
+To view the logs, use the following commands:
+
+bash
+sudo tail -f /var/log/myapp.log
+sudo tail -f /var/log/nginx/access.log
+sudo tail -f /var/log/nginx/error.log
+
+![Снимок экрана 2024-06-02 в 5 06 15 PM](https://github.com/Svetozara3363/ImageApi/assets/120119368/8c720ea8-ae6b-4d80-9718-d51ac0aefc1d)
+
+![2024-06-02 17 21 29](https://github.com/Svetozara3363/ImageApi/assets/120119368/e6ea02b4-26d5-439a-a181-c6c8d831255f)
+
