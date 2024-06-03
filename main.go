@@ -105,7 +105,7 @@ func GetPictureHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	w.Header().Set("Content-Type", "image/jpeg") // Укажите соответствующий тип изображения
+	w.Header().Set("Content-Type", "image/jpeg")
 	w.WriteHeader(http.StatusOK)
 	w.Write(fileBytes)
 }
