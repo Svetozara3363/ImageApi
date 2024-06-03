@@ -33,7 +33,7 @@ func main() {
 	router.HandleFunc("/", HomeHandler)
 	router.HandleFunc("/upload", UploadHandler).Methods("POST")
 	router.HandleFunc("/picture", GetPictureHandler).Methods("GET")
-	router.HandleFunc("/picture", DeletePictureHandler).Methods("DELETE")
+	router.HandleFunc("/delete_picture", DeletePictureHandler).Methods("DELETE")
 
 	// Запуск сервера
 	fmt.Println("Starting server at :8080")
