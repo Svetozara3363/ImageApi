@@ -85,7 +85,7 @@ func UploadHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.WriteHeader(http.StatusOK)
-	fmt.Fprintf(w, "Файл успешно загружен: %s\n", staticImageName)
+	fmt.Fprintf(w, "File uploaded successfully: %s\n", staticImageName)
 }
 
 // GetPictureHandler обрабатывает получение изображения
@@ -93,7 +93,7 @@ func GetPictureHandler(w http.ResponseWriter, r *http.Request) {
 	filePath := filepath.Join(uploadDir, staticImageName)
 	file, err := os.Open(filePath)
 	if err != nil {
-		http.Error(w, "Файл не найден.", http.StatusNotFound)
+		http.Error(w, "File not found.", http.StatusNotFound)
 		return
 	}
 	defer file.Close()
@@ -114,10 +114,10 @@ func DeletePictureHandler(w http.ResponseWriter, r *http.Request) {
 	filePath := filepath.Join(uploadDir, staticImageName)
 	err := os.Remove(filePath)
 	if err != nil {
-		http.Error(w, "Файл не найден.", http.StatusNotFound)
+		http.Error(w, "File not found.", http.StatusNotFound)
 		return
 	}
 
 	w.WriteHeader(http.StatusOK)
-	fmt.Fprintf(w, "Файл успешно удален: %s\n", staticImageName)
+	fmt.Fprintf(w, "File deleted successfully: %s\n", staticImageName)
 }
