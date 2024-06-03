@@ -37,7 +37,8 @@ Description: Deletes an image from the server by its filename.
 
 Example Request:
 bash
-curl -X DELETE http://dokalab.com/picture
+curl -X DELETE http://dokalab.com/delete_picture
+
 
 Response:
 Status Code: 200 OK
