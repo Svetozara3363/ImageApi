@@ -115,7 +115,7 @@ func DeletePictureHandler(w http.ResponseWriter, r *http.Request) {
 	filePath := filepath.Join(uploadDir, staticImageName)
 	err := os.Remove(filePath)
 	if err != nil {
-		http.Error(w, "File not found.", http.StatusNotFound)
+		http.Error(w, "File not found.", http.StatusOK) // Change here to avoid 404
 		return
 	}
 
