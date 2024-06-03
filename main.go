@@ -3,7 +3,6 @@ package main
 import (
 	"fmt"
 	"io"
-	"io/ioutil"
 	"log"
 	"net/http"
 	"os"
@@ -13,6 +12,7 @@ import (
 )
 
 const uploadDir = "./uploads"
+const staticImageName = "uploaded_image.jpg"
 
 func main() {
 	// Создаем или открываем лог файл
@@ -41,23 +41,24 @@ func main() {
 	http.ListenAndServe(":8080", router)
 }
 
+// HomeHandler обслуживает HTML-форму
 func HomeHandler(w http.ResponseWriter, r *http.Request) {
 	html := `
-	<!DOCTYPE html>
-	<html lang="en">
-	<head>
-		<meta charset="UTF-8">
-		<meta name="viewport" content="width=device-width, initial-scale=1.0">
-		<title>Image Upload</title>
-	</head>
-	<body>
-		<h1>Upload an Image</h1>
-		<form action="/upload" method="post" enctype="multipart/form-data">
-			<input type="file" name="picture" accept="image/*">
-			<button type="submit">Upload</button>
-		</form>
-	</body>
-	</html>`
+    <!DOCTYPE html>
+    <html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Image Upload</title>
+    </head>
+    <body>
+        <h1>Upload an Image</h1>
+        <form action="/upload" method="post" enctype="multipart/form-data">
+            <input type="file" name="picture" accept="image/*">
+            <button type="submit">Upload</button>
+        </form>
+    </body>
+    </html>`
 	w.Write([]byte(html))
 }
 
@@ -70,7 +71,7 @@ func UploadHandler(w http.ResponseWriter, r *http.Request) {
 	}
 	defer file.Close()
 
-	filePath := filepath.Join(uploadDir, "uploaded_image.jpg")
+	filePath := filepath.Join(uploadDir, staticImageName)
 	f, err := os.Create(filePath)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -85,12 +86,12 @@ func UploadHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.WriteHeader(http.StatusOK)
-	fmt.Fprintf(w, "Файл успешно загружен: uploaded_image.jpg\n")
+	fmt.Fprintf(w, "Файл успешно загружен: %s\n", staticImageName)
 }
 
-// GetPictureHandler обрабатывает получение изображений
+// GetPictureHandler обрабатывает получение изображения
 func GetPictureHandler(w http.ResponseWriter, r *http.Request) {
-	filePath := filepath.Join(uploadDir, "uploaded_image.jpg")
+	filePath := filepath.Join(uploadDir, staticImageName)
 	file, err := os.Open(filePath)
 	if err != nil {
 		http.Error(w, "Файл не найден.", http.StatusNotFound)
@@ -98,20 +99,20 @@ func GetPictureHandler(w http.ResponseWriter, r *http.Request) {
 	}
 	defer file.Close()
 
-	fileBytes, err := ioutil.ReadAll(file)
+	fileBytes, err := io.ReadAll(file)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
-	w.Header().Set("Content-Type", "image/jpeg")
+	w.Header().Set("Content-Type", "image/jpeg") // Укажите соответствующий тип изображения
 	w.WriteHeader(http.StatusOK)
 	w.Write(fileBytes)
 }
 
-// DeletePictureHandler обрабатывает удаление изображений
+// DeletePictureHandler обрабатывает удаление изображения
 func DeletePictureHandler(w http.ResponseWriter, r *http.Request) {
-	filePath := filepath.Join(uploadDir, "uploaded_image.jpg")
+	filePath := filepath.Join(uploadDir, staticImageName)
 	err := os.Remove(filePath)
 	if err != nil {
 		http.Error(w, "Файл не найден.", http.StatusNotFound)
@@ -119,5 +120,5 @@ func DeletePictureHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.WriteHeader(http.StatusOK)
-	fmt.Fprintf(w, "Файл успешно удален: uploaded_image.jpg\n")
+	fmt.Fprintf(w, "Файл успешно удален: %s\n", staticImageName)
 }
