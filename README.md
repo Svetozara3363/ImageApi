@@ -24,7 +24,7 @@ Description: Retrieves an image from the server by its filename.
 
 Example Request:
 bash
-curl http://dokalab.com/picture/your_image_name
+curl http://dokalab.com/picture
 
 Response:
 Status Code: 200 OK
@@ -37,14 +37,14 @@ Description: Deletes an image from the server by its filename.
 
 Example Request:
 bash
-curl -X DELETE http://dokalab.com/picture/your_image_name
+curl -X DELETE http://dokalab.com/picture
 
 Response:
 Status Code: 200 OK
 Body: Confirmation message indicating the file was deleted
 
-# Storage Location
-Uploaded images are stored in the ./uploads directory on the server until they are deleted by the user.
+File Storage
+All uploaded images are stored in the ./uploads directory on the server under the name uploaded_image.jpg.
 
 # Logs
 Log files for the application and server are available for monitoring:
