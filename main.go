@@ -9,6 +9,7 @@ import (
 	"path/filepath"
 
 	"github.com/gorilla/mux"
+	"github.com/rs/cors"
 )
 
 const uploadDir = "./uploads"
@@ -32,9 +33,17 @@ func main() {
 	router.HandleFunc("/picture", GetPictureHandler).Methods("GET")
 	router.HandleFunc("/delete_picture", DeletePictureHandler).Methods("DELETE")
 
+	c := cors.New(cors.Options{
+		AllowedOrigins: []string{"http://dokalab.com"},
+		AllowedMethods: []string{"GET", "POST", "DELETE"},
+		AllowedHeaders: []string{"Content-Type"},
+	})
+
+	handler := c.Handler(router)
+
 	fmt.Println("Starting server at :8080")
 	log.Println("Starting server at :8080")
-	http.ListenAndServe(":8080", router)
+	http.ListenAndServe(":8080", handler)
 }
 
 func HomeHandler(w http.ResponseWriter, r *http.Request) {
