@@ -1,6 +1,7 @@
 package main
 
 import (
+	"database/sql"
 	"fmt"
 	"io"
 	"log"
@@ -9,11 +10,13 @@ import (
 	"path/filepath"
 
 	"github.com/gorilla/mux"
+	_ "github.com/lib/pq"
 	"github.com/rs/cors"
 )
 
 const uploadDir = "./uploads"
-const staticImageName = "uploaded_image.jpg"
+
+var db *sql.DB
 
 func main() {
 	logFile, err := os.OpenFile("/var/log/myapp.log", os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
@@ -27,11 +30,26 @@ func main() {
 		os.Mkdir(uploadDir, os.ModePerm)
 	}
 
+	// Подключение к PostgreSQL
+	connStr := "user=username dbname=mydb sslmode=disable"
+	db, err = sql.Open("postgres", connStr)
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer db.Close()
+
+	// Проверка подключения
+	err = db.Ping()
+	if err != nil {
+		log.Fatal(err)
+	}
+	fmt.Println("Successfully connected to PostgreSQL")
+
 	router := mux.NewRouter()
 	router.HandleFunc("/", HomeHandler)
 	router.HandleFunc("/upload", UploadHandler).Methods("POST")
-	router.HandleFunc("/picture", GetPictureHandler).Methods("GET")
-	router.HandleFunc("/delete_picture", DeletePictureHandler).Methods("DELETE")
+	router.HandleFunc("/picture/{id:[0-9]+}", GetPictureHandler).Methods("GET")
+	router.HandleFunc("/delete_picture/{id:[0-9]+}", DeletePictureHandler).Methods("DELETE")
 
 	c := cors.New(cors.Options{
 		AllowedOrigins: []string{"http://dokalab.com"},
@@ -67,14 +85,14 @@ func HomeHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func UploadHandler(w http.ResponseWriter, r *http.Request) {
-	file, _, err := r.FormFile("picture")
+	file, handler, err := r.FormFile("picture")
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 	defer file.Close()
 
-	filePath := filepath.Join(uploadDir, staticImageName)
+	filePath := filepath.Join(uploadDir, handler.Filename)
 	f, err := os.Create(filePath)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -88,12 +106,33 @@ func UploadHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	var id int
+	err = db.QueryRow("INSERT INTO images (filename) VALUES ($1) RETURNING id", handler.Filename).Scan(&id)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
 	w.WriteHeader(http.StatusOK)
-	fmt.Fprintf(w, "File uploaded successfully: %s\n", staticImageName)
+	fmt.Fprintf(w, "File uploaded successfully with ID: %d\n", id)
 }
 
 func GetPictureHandler(w http.ResponseWriter, r *http.Request) {
-	filePath := filepath.Join(uploadDir, staticImageName)
+	vars := mux.Vars(r)
+	id := vars["id"]
+
+	var filename string
+	err := db.QueryRow("SELECT filename FROM images WHERE id = $1", id).Scan(&filename)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			http.Error(w, "File not found.", http.StatusNotFound)
+		} else {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+		}
+		return
+	}
+
+	filePath := filepath.Join(uploadDir, filename)
 	file, err := os.Open(filePath)
 	if err != nil {
 		http.Error(w, "File not found.", http.StatusNotFound)
@@ -113,13 +152,27 @@ func GetPictureHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func DeletePictureHandler(w http.ResponseWriter, r *http.Request) {
-	filePath := filepath.Join(uploadDir, staticImageName)
-	err := os.Remove(filePath)
+	vars := mux.Vars(r)
+	id := vars["id"]
+
+	var filename string
+	err := db.QueryRow("DELETE FROM images WHERE id = $1 RETURNING filename", id).Scan(&filename)
 	if err != nil {
-		http.Error(w, "File not found.", http.StatusNotFound)
+		if err == sql.ErrNoRows {
+			http.Error(w, "File not found.", http.StatusNotFound)
+		} else {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+		}
+		return
+	}
+
+	filePath := filepath.Join(uploadDir, filename)
+	err = os.Remove(filePath)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
 	w.WriteHeader(http.StatusOK)
-	fmt.Fprintf(w, "File deleted successfully: %s\n", staticImageName)
+	fmt.Fprintf(w, "File deleted successfully: %s\n", filename)
 }
