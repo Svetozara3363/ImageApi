@@ -31,7 +31,7 @@ func main() {
 	}
 
 	// Подключение к PostgreSQL
-	connStr := "user=username dbname=mydb sslmode=disable"
+	connStr := "user=myuser password=mypassword dbname=mydb sslmode=disable"
 	db, err = sql.Open("postgres", connStr)
 	if err != nil {
 		log.Fatal(err)
@@ -52,7 +52,7 @@ func main() {
 	router.HandleFunc("/delete_picture/{id:[0-9]+}", DeletePictureHandler).Methods("DELETE")
 
 	c := cors.New(cors.Options{
-		AllowedOrigins: []string{"http://dokalab.com"},
+		AllowedOrigins: []string{"*"},
 		AllowedMethods: []string{"GET", "POST", "DELETE"},
 		AllowedHeaders: []string{"Content-Type"},
 	})
@@ -76,7 +76,8 @@ func HomeHandler(w http.ResponseWriter, r *http.Request) {
     <body>
         <h1>Upload an Image</h1>
         <form action="/upload" method="post" enctype="multipart/form-data">
-            <input type="file" name="picture" accept="image/*">
+            <input type="text" name="user_id" placeholder="User ID" required>
+            <input type="file" name="picture" accept="image/*" required>
             <button type="submit">Upload</button>
         </form>
     </body>
@@ -85,6 +86,12 @@ func HomeHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func UploadHandler(w http.ResponseWriter, r *http.Request) {
+	userID := r.FormValue("user_id")
+	if userID == "" {
+		http.Error(w, "User ID is required", http.StatusBadRequest)
+		return
+	}
+
 	file, handler, err := r.FormFile("picture")
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
@@ -107,7 +114,7 @@ func UploadHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	var id int
-	err = db.QueryRow("INSERT INTO images (filename) VALUES ($1) RETURNING id", handler.Filename).Scan(&id)
+	err = db.QueryRow("INSERT INTO images (user_id, filename) VALUES ($1, $2) RETURNING id", userID, handler.Filename).Scan(&id)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
