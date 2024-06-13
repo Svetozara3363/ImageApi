@@ -76,7 +76,6 @@ func HomeHandler(w http.ResponseWriter, r *http.Request) {
     <body>
         <h1>Upload an Image</h1>
         <form action="/upload" method="post" enctype="multipart/form-data">
-            <input type="text" name="user_id" placeholder="User ID" required>
             <input type="file" name="picture" accept="image/*" required>
             <button type="submit">Upload</button>
         </form>
@@ -86,12 +85,6 @@ func HomeHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func UploadHandler(w http.ResponseWriter, r *http.Request) {
-	userID := r.FormValue("user_id")
-	if userID == "" {
-		http.Error(w, "User ID is required", http.StatusBadRequest)
-		return
-	}
-
 	file, handler, err := r.FormFile("picture")
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
@@ -114,7 +107,7 @@ func UploadHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	var id int
-	err = db.QueryRow("INSERT INTO images (user_id, filename) VALUES ($1, $2) RETURNING id", userID, handler.Filename).Scan(&id)
+	err = db.QueryRow("INSERT INTO images (filename) VALUES ($1) RETURNING id", handler.Filename).Scan(&id)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
