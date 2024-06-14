@@ -10,6 +10,7 @@ import (
 	"os"
 	"path/filepath"
 
+	"github.com/google/uuid"
 	"github.com/gorilla/mux"
 	_ "github.com/lib/pq"
 	"github.com/rs/cors"
@@ -118,8 +119,10 @@ func UploadHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	sessionID := uuid.New().String()
+
 	var id int
-	err = db.QueryRow("INSERT INTO images (filename) VALUES ($1) RETURNING id", handler.Filename).Scan(&id)
+	err = db.QueryRow("INSERT INTO images (filename, session_id) VALUES ($1, $2) RETURNING id", handler.Filename, sessionID).Scan(&id)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		log.Printf("Error inserting file into database: %v", err)
@@ -127,7 +130,7 @@ func UploadHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.WriteHeader(http.StatusOK)
-	fmt.Fprintf(w, "File uploaded successfully with ID: %d\n", id)
+	fmt.Fprintf(w, "File uploaded successfully with ID: %d and Session ID: %s\n", id, sessionID)
 }
 
 func GetPictureHandler(w http.ResponseWriter, r *http.Request) {
@@ -169,7 +172,13 @@ func GetPictureHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func GetAllPicturesHandler(w http.ResponseWriter, r *http.Request) {
-	rows, err := db.Query("SELECT id, filename FROM images")
+	sessionID := r.URL.Query().Get("session_id")
+	if sessionID == "" {
+		http.Error(w, "session_id is required", http.StatusBadRequest)
+		return
+	}
+
+	rows, err := db.Query("SELECT id, filename FROM images WHERE session_id = $1", sessionID)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		log.Printf("Error querying images from database: %v", err)
