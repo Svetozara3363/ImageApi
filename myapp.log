@@ -24,3 +24,32 @@
 2024/06/14 17:48:27 Error querying file from database: pq: relation "images" does not exist
 2024/06/14 21:16:11 File not found for ID: 1
 2024/06/14 21:17:43 File not found for ID: 1
+2024/06/14 21:54:32 Checking upload directory
+2024/06/14 21:54:32 Connecting to PostgreSQL
+2024/06/14 21:54:32 Pinging PostgreSQL
+2024/06/14 21:54:32 Starting server at :8080
+2024/06/14 23:30:04 Checking upload directory
+2024/06/14 23:30:04 Connecting to PostgreSQL
+2024/06/14 23:30:04 Pinging PostgreSQL
+2024/06/14 23:30:04 Starting server at :8080
+2024/06/14 23:30:04 Error starting server: listen tcp :8080: bind: address already in use
+2024/06/14 23:32:34 Checking upload directory
+2024/06/14 23:32:34 Connecting to PostgreSQL
+2024/06/14 23:32:34 Pinging PostgreSQL
+2024/06/14 23:32:34 Starting server at :8080
+2024/06/14 23:32:34 Error starting server: listen tcp :8080: bind: address already in use
+2024/06/14 23:35:29 Checking upload directory
+2024/06/14 23:35:29 Connecting to PostgreSQL
+2024/06/14 23:35:29 Pinging PostgreSQL
+2024/06/14 23:35:29 Starting server at :8080
+2024/06/14 23:35:29 Error starting server: listen tcp :8080: bind: address already in use
+2024/06/14 23:35:46 Checking upload directory
+2024/06/14 23:35:46 Connecting to PostgreSQL
+2024/06/14 23:35:46 Pinging PostgreSQL
+2024/06/14 23:35:46 Starting server at :8080
+2024/06/14 23:35:46 Error starting server: listen tcp :8080: bind: address already in use
+2024/06/14 23:51:37 Checking upload directory
+2024/06/14 23:51:37 Connecting to PostgreSQL
+2024/06/14 23:51:37 Pinging PostgreSQL
+2024/06/14 23:51:37 Starting server at :8080
+2024/06/14 23:51:37 Error starting server: listen tcp :8080: bind: address already in use

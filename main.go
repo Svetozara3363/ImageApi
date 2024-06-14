@@ -2,6 +2,7 @@ package main
 
 import (
 	"database/sql"
+	"encoding/json"
 	"fmt"
 	"io"
 	"log"
@@ -49,17 +50,18 @@ func main() {
 	if err != nil {
 		log.Fatalf("Error pinging PostgreSQL: %v", err)
 	}
-	fmt.Println("Successfully connected to PostgreSQL")
+	log.Println("Successfully connected to PostgreSQL")
 
 	router := mux.NewRouter()
 	router.HandleFunc("/", HomeHandler)
 	router.HandleFunc("/upload", UploadHandler).Methods("POST")
 	router.HandleFunc("/picture/{id:[0-9]+}", GetPictureHandler).Methods("GET")
+	router.HandleFunc("/pictures", GetAllPicturesHandler).Methods("GET")
 	router.HandleFunc("/delete_picture/{id:[0-9]+}", DeletePictureHandler).Methods("DELETE")
 
 	c := cors.New(cors.Options{
 		AllowedOrigins: []string{"*"},
-		AllowedMethods: []string{"GET", "POST", "DELETE"},
+		AllowedMethods: []string{"POST", "GET", "DELETE"},
 		AllowedHeaders: []string{"Content-Type"},
 	})
 
@@ -164,6 +166,48 @@ func GetPictureHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "image/jpeg")
 	w.WriteHeader(http.StatusOK)
 	w.Write(fileBytes)
+}
+
+func GetAllPicturesHandler(w http.ResponseWriter, r *http.Request) {
+	rows, err := db.Query("SELECT id, filename FROM images")
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		log.Printf("Error querying images from database: %v", err)
+		return
+	}
+	defer rows.Close()
+
+	var pictures []struct {
+		ID       int    `json:"id"`
+		Filename string `json:"filename"`
+	}
+
+	for rows.Next() {
+		var picture struct {
+			ID       int    `json:"id"`
+			Filename string `json:"filename"`
+		}
+		if err := rows.Scan(&picture.ID, &picture.Filename); err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			log.Printf("Error scanning row: %v", err)
+			return
+		}
+		pictures = append(pictures, picture)
+	}
+
+	if err := rows.Err(); err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		log.Printf("Error with rows: %v", err)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	if err := json.NewEncoder(w).Encode(pictures); err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		log.Printf("Error encoding response: %v", err)
+		return
+	}
 }
 
 func DeletePictureHandler(w http.ResponseWriter, r *http.Request) {
