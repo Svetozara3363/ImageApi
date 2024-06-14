@@ -21,30 +21,33 @@ var db *sql.DB
 func main() {
 	log.Println("Starting application")
 
-	logFile, err := os.OpenFile("/var/log/myapp.log", os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+	logFile, err := os.OpenFile("./myapp.log", os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
 	if err != nil {
-		log.Fatal("Error opening log file:", err)
+		log.Fatalf("Error opening log file: %v", err)
 	}
 	log.SetOutput(logFile)
 	defer logFile.Close()
 
 	log.Println("Checking upload directory")
 	if _, err := os.Stat(uploadDir); os.IsNotExist(err) {
-		os.Mkdir(uploadDir, os.ModePerm)
+		err := os.Mkdir(uploadDir, os.ModePerm)
+		if err != nil {
+			log.Fatalf("Error creating upload directory: %v", err)
+		}
 	}
 
 	log.Println("Connecting to PostgreSQL")
-	connStr := "user=myuser password=mypassword dbname=mydb sslmode=disable"
+	connStr := "user=myuser dbname=mydb sslmode=disable"
 	db, err = sql.Open("postgres", connStr)
 	if err != nil {
-		log.Fatal("Error connecting to PostgreSQL:", err)
+		log.Fatalf("Error connecting to PostgreSQL: %v", err)
 	}
 	defer db.Close()
 
 	log.Println("Pinging PostgreSQL")
 	err = db.Ping()
 	if err != nil {
-		log.Fatal("Error pinging PostgreSQL:", err)
+		log.Fatalf("Error pinging PostgreSQL: %v", err)
 	}
 	fmt.Println("Successfully connected to PostgreSQL")
 
@@ -64,7 +67,7 @@ func main() {
 
 	log.Println("Starting server at :8080")
 	if err := http.ListenAndServe(":8080", handler); err != nil {
-		log.Fatal("Error starting server:", err)
+		log.Fatalf("Error starting server: %v", err)
 	}
 }
 
@@ -92,6 +95,7 @@ func UploadHandler(w http.ResponseWriter, r *http.Request) {
 	file, handler, err := r.FormFile("picture")
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
+		log.Printf("Error getting file from form: %v", err)
 		return
 	}
 	defer file.Close()
@@ -100,6 +104,7 @@ func UploadHandler(w http.ResponseWriter, r *http.Request) {
 	f, err := os.Create(filePath)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
+		log.Printf("Error creating file: %v", err)
 		return
 	}
 	defer f.Close()
@@ -107,6 +112,7 @@ func UploadHandler(w http.ResponseWriter, r *http.Request) {
 	_, err = io.Copy(f, file)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
+		log.Printf("Error copying file: %v", err)
 		return
 	}
 
@@ -114,6 +120,7 @@ func UploadHandler(w http.ResponseWriter, r *http.Request) {
 	err = db.QueryRow("INSERT INTO images (filename) VALUES ($1) RETURNING id", handler.Filename).Scan(&id)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
+		log.Printf("Error inserting file into database: %v", err)
 		return
 	}
 
@@ -130,8 +137,10 @@ func GetPictureHandler(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		if err == sql.ErrNoRows {
 			http.Error(w, "File not found.", http.StatusNotFound)
+			log.Printf("File not found for ID: %s", id)
 		} else {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
+			log.Printf("Error querying file from database: %v", err)
 		}
 		return
 	}
@@ -140,6 +149,7 @@ func GetPictureHandler(w http.ResponseWriter, r *http.Request) {
 	file, err := os.Open(filePath)
 	if err != nil {
 		http.Error(w, "File not found.", http.StatusNotFound)
+		log.Printf("Error opening file: %v", err)
 		return
 	}
 	defer file.Close()
@@ -147,6 +157,7 @@ func GetPictureHandler(w http.ResponseWriter, r *http.Request) {
 	fileBytes, err := io.ReadAll(file)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
+		log.Printf("Error reading file: %v", err)
 		return
 	}
 
@@ -164,8 +175,10 @@ func DeletePictureHandler(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		if err == sql.ErrNoRows {
 			http.Error(w, "File not found.", http.StatusNotFound)
+			log.Printf("File not found for ID: %s", id)
 		} else {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
+			log.Printf("Error deleting file from database: %v", err)
 		}
 		return
 	}
@@ -174,6 +187,7 @@ func DeletePictureHandler(w http.ResponseWriter, r *http.Request) {
 	err = os.Remove(filePath)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
+		log.Printf("Error deleting file: %v", err)
 		return
 	}
 

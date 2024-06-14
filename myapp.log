@@ -1,2 +1,26 @@
 2024/06/02 16:05:15 Starting server at :8080
 2024/06/02 16:45:49 Starting server at :8080
+2024/06/14 14:34:10 Checking upload directory
+2024/06/14 14:34:10 Connecting to PostgreSQL
+2024/06/14 14:34:10 Pinging PostgreSQL
+2024/06/14 14:34:10 Error pinging PostgreSQL: pq: role "postgres" does not exist
+2024/06/14 14:34:39 Checking upload directory
+2024/06/14 14:34:39 Connecting to PostgreSQL
+2024/06/14 14:34:39 Pinging PostgreSQL
+2024/06/14 14:34:39 Error pinging PostgreSQL: pq: role "postgres" does not exist
+2024/06/14 14:34:45 Checking upload directory
+2024/06/14 14:34:45 Connecting to PostgreSQL
+2024/06/14 14:34:45 Pinging PostgreSQL
+2024/06/14 14:34:45 Error pinging PostgreSQL: pq: role "postgres" does not exist
+2024/06/14 16:54:15 Checking upload directory
+2024/06/14 16:54:15 Connecting to PostgreSQL
+2024/06/14 16:54:15 Pinging PostgreSQL
+2024/06/14 16:54:15 Error pinging PostgreSQL: pq: role "postgres" does not exist
+2024/06/14 16:54:23 Checking upload directory
+2024/06/14 16:54:23 Connecting to PostgreSQL
+2024/06/14 16:54:23 Pinging PostgreSQL
+2024/06/14 16:54:23 Starting server at :8080
+2024/06/14 16:55:33 Error inserting file into database: pq: relation "images" does not exist
+2024/06/14 17:48:27 Error querying file from database: pq: relation "images" does not exist
+2024/06/14 21:16:11 File not found for ID: 1
+2024/06/14 21:17:43 File not found for ID: 1
