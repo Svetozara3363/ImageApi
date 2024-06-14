@@ -19,29 +19,32 @@ const uploadDir = "./uploads"
 var db *sql.DB
 
 func main() {
+	log.Println("Starting application")
+
 	logFile, err := os.OpenFile("/var/log/myapp.log", os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
 	if err != nil {
-		log.Fatal(err)
+		log.Fatal("Error opening log file:", err)
 	}
 	log.SetOutput(logFile)
 	defer logFile.Close()
 
+	log.Println("Checking upload directory")
 	if _, err := os.Stat(uploadDir); os.IsNotExist(err) {
 		os.Mkdir(uploadDir, os.ModePerm)
 	}
 
-	// Подключение к PostgreSQL
+	log.Println("Connecting to PostgreSQL")
 	connStr := "user=myuser password=mypassword dbname=mydb sslmode=disable"
 	db, err = sql.Open("postgres", connStr)
 	if err != nil {
-		log.Fatal(err)
+		log.Fatal("Error connecting to PostgreSQL:", err)
 	}
 	defer db.Close()
 
-	// Проверка подключения
+	log.Println("Pinging PostgreSQL")
 	err = db.Ping()
 	if err != nil {
-		log.Fatal(err)
+		log.Fatal("Error pinging PostgreSQL:", err)
 	}
 	fmt.Println("Successfully connected to PostgreSQL")
 
@@ -59,9 +62,10 @@ func main() {
 
 	handler := c.Handler(router)
 
-	fmt.Println("Starting server at :8080")
 	log.Println("Starting server at :8080")
-	http.ListenAndServe(":8080", handler)
+	if err := http.ListenAndServe(":8080", handler); err != nil {
+		log.Fatal("Error starting server:", err)
+	}
 }
 
 func HomeHandler(w http.ResponseWriter, r *http.Request) {
