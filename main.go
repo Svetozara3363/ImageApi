@@ -39,7 +39,7 @@ func main() {
 	}
 
 	log.Println("Connecting to PostgreSQL")
-	connStr := "user=myuser dbname=mydb sslmode=disable"
+	connStr := "user=myuser password=mypassword dbname=mydb sslmode=disable"
 	db, err = sql.Open("postgres", connStr)
 	if err != nil {
 		log.Fatalf("Error connecting to PostgreSQL: %v", err)
@@ -59,6 +59,7 @@ func main() {
 	router.HandleFunc("/picture/{id:[0-9]+}", GetPictureHandler).Methods("GET")
 	router.HandleFunc("/pictures", GetAllPicturesHandler).Methods("GET")
 	router.HandleFunc("/delete_picture/{id:[0-9]+}", DeletePictureHandler).Methods("DELETE")
+	router.HandleFunc("/api/", APIRootHandler) // добавьте этот маршрут
 
 	c := cors.New(cors.Options{
 		AllowedOrigins: []string{"*"},
@@ -246,4 +247,9 @@ func DeletePictureHandler(w http.ResponseWriter, r *http.Request) {
 
 	w.WriteHeader(http.StatusOK)
 	fmt.Fprintf(w, "File deleted successfully: %s\n", filename)
+}
+
+func APIRootHandler(w http.ResponseWriter, r *http.Request) {
+	w.WriteHeader(http.StatusOK)
+	w.Write([]byte("API is working"))
 }
