@@ -80,3 +80,8 @@
 2024/06/17 14:44:51 Pinging PostgreSQL
 2024/06/17 14:44:51 Successfully connected to PostgreSQL
 2024/06/17 14:44:51 Starting server at :8080
+2024/06/17 17:04:50 Checking upload directory
+2024/06/17 17:04:50 Connecting to PostgreSQL
+2024/06/17 17:04:50 Pinging PostgreSQL
+2024/06/17 17:04:50 Successfully connected to PostgreSQL
+2024/06/17 17:04:50 Starting server at :8080
