@@ -85,3 +85,14 @@
 2024/06/17 17:04:50 Pinging PostgreSQL
 2024/06/17 17:04:50 Successfully connected to PostgreSQL
 2024/06/17 17:04:50 Starting server at :8080
+2024/06/17 18:46:00 Checking upload directory
+2024/06/17 18:46:00 Connecting to PostgreSQL
+2024/06/17 18:46:00 Pinging PostgreSQL
+2024/06/17 18:46:01 Successfully connected to PostgreSQL
+2024/06/17 18:46:01 Starting server at :8080
+2024/06/17 18:46:01 Error starting server: listen tcp :8080: bind: address already in use
+2024/06/18 11:37:28 Checking upload directory
+2024/06/18 11:37:28 Connecting to PostgreSQL
+2024/06/18 11:37:28 Pinging PostgreSQL
+2024/06/18 11:37:28 Successfully connected to PostgreSQL
+2024/06/18 11:37:28 Starting server at :8080

@@ -59,7 +59,9 @@ func main() {
 	router.HandleFunc("/picture/{id:[0-9]+}", GetPictureHandler).Methods("GET")
 	router.HandleFunc("/pictures", GetAllPicturesHandler).Methods("GET")
 	router.HandleFunc("/delete_picture/{id:[0-9]+}", DeletePictureHandler).Methods("DELETE")
-	router.HandleFunc("/api/", APIRootHandler) // добавьте этот маршрут
+	router.HandleFunc("/api/", APIRootHandler)
+	router.HandleFunc("/api/upload", UploadHandler).Methods("POST")
+	router.HandleFunc("/api/pictures", GetAllPicturesHandler).Methods("GET")
 
 	c := cors.New(cors.Options{
 		AllowedOrigins: []string{"*"},
@@ -94,8 +96,8 @@ func HomeHandler(w http.ResponseWriter, r *http.Request) {
     </html>`
 	w.Write([]byte(html))
 }
-
 func UploadHandler(w http.ResponseWriter, r *http.Request) {
+	log.Println("Received upload request")
 	file, handler, err := r.FormFile("picture")
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
@@ -104,6 +106,7 @@ func UploadHandler(w http.ResponseWriter, r *http.Request) {
 	}
 	defer file.Close()
 
+	log.Printf("Uploading file: %s", handler.Filename)
 	filePath := filepath.Join(uploadDir, handler.Filename)
 	f, err := os.Create(filePath)
 	if err != nil {
@@ -130,8 +133,10 @@ func UploadHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	log.Printf("File uploaded successfully with ID: %d and Session ID: %s", id, sessionID)
+	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
-	fmt.Fprintf(w, "File uploaded successfully with ID: %d and Session ID: %s\n", id, sessionID)
+	fmt.Fprintf(w, `{"message": "File uploaded successfully with ID: %d and Session ID: %s"}`, id, sessionID)
 }
 
 func GetPictureHandler(w http.ResponseWriter, r *http.Request) {
