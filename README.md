@@ -77,4 +77,8 @@ bash
 sudo tail -f /var/log/myapp.log
 sudo tail -f /var/log/nginx/access.log
 sudo tail -f /var/log/nginx/error.log
+<img width="893" alt="Снимок экрана 2024-06-18 в 12 25 25 PM" src="https://github.com/Svetozara3363/ImageApi/assets/120119368/53171572-e1bd-4b75-80e0-edd00b6b34f8">
+<img width="889" alt="Снимок экрана 2024-06-18 в 12 25 10 PM" src="https://github.com/Svetozara3363/ImageApi/assets/120119368/1d8a58ba-11e6-4308-82aa-8c979173cc8d">
+<img width="875" alt="Снимок экрана 2024-06-18 в 12 25 17 PM" src="https://github.com/Svetozara3363/ImageApi/assets/120119368/e5bc1f98-4198-4ab0-93c7-b08f30332e2e">
+
 
