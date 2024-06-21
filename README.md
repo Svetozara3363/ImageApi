@@ -11,7 +11,7 @@ Description: Uploads an image to the server.
 
 Example Request:
 bash
-curl -F "picture=@path_to_your_image" http://dokalab.com/api/upload
+curl -F "picture=@path_to_your_image" https://dokalab.com/api/upload
 
 
 Response:
@@ -25,7 +25,7 @@ Description: Retrieves an image from the server by its ID.
 
 Example Request:
 bash
-curl http://dokalab.com/api/picture/{id}
+curl https://dokalab.com/api/picture/{id}
 
 
 Response:
@@ -39,7 +39,7 @@ Description: Retrieves all images associated with a session ID.
 
 Example Request:
 bash
-curl http://dokalab.com/api/pictures?session_id={session_id}
+curl https://dokalab.com/api/pictures?session_id={session_id}
 
 Response:
 Status Code: 200 OK
@@ -52,7 +52,7 @@ Description: Deletes an image from the server by its ID.
 
 Example Request:
 bash
-curl -X DELETE http://dokalab.com/api/delete_picture/{id}
+curl -X DELETE https://dokalab.com/api/delete_picture/{id}
 
 
 Response:
