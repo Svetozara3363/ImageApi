@@ -64,7 +64,7 @@ func HomeHandler(w http.ResponseWriter, r *http.Request) {
     </head>
     <body>
         <h1>Upload an Image</h1>
-        <form action="/upload" method="post" enctype="multipart/form-data">
+        <form action="/api/upload" method="post" enctype="multipart/form-data">
             <input type="file" name="picture" accept="image/*" required>
             <button type="submit">Upload</button>
         </form>
