@@ -34,9 +34,10 @@ func main() {
 	router := mux.NewRouter()
 	router.HandleFunc("/", HomeHandler)
 	router.HandleFunc("/upload", UploadHandler).Methods("POST")
-	router.PathPrefix("/uploads/").Handler(http.StripPrefix("/uploads/", http.FileServer(http.Dir(uploadDir))))
+	router.HandleFunc("/pictures", GetPictureHandler).Methods("GET")
 	router.HandleFunc("/api/", APIRootHandler)
 	router.HandleFunc("/api/upload", UploadHandler).Methods("POST")
+	router.HandleFunc("/api/pictures", GetPictureHandler).Methods("GET")
 
 	c := cors.New(cors.Options{
 		AllowedOrigins: []string{"*"},
@@ -63,7 +64,7 @@ func HomeHandler(w http.ResponseWriter, r *http.Request) {
     </head>
     <body>
         <h1>Upload an Image</h1>
-        <form action="/api/upload" method="post" enctype="multipart/form-data">
+        <form action="/upload" method="post" enctype="multipart/form-data">
             <input type="file" name="picture" accept="image/*" required>
             <button type="submit">Upload</button>
         </form>
@@ -83,7 +84,7 @@ func UploadHandler(w http.ResponseWriter, r *http.Request) {
 	defer file.Close()
 
 	log.Printf("Uploading file: %s", handler.Filename)
-	filePath := filepath.Join(uploadDir, handler.Filename)
+	filePath := filepath.Join(uploadDir, "uploaded_image.jpg")
 	f, err := os.Create(filePath)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -102,7 +103,29 @@ func UploadHandler(w http.ResponseWriter, r *http.Request) {
 	log.Printf("File uploaded successfully")
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
-	w.Write([]byte(`{"message": "File uploaded successfully", "path": "/uploads/` + handler.Filename + `"}`))
+	w.Write([]byte(`{"message": "File uploaded successfully"}`))
+}
+
+func GetPictureHandler(w http.ResponseWriter, r *http.Request) {
+	filePath := filepath.Join(uploadDir, "uploaded_image.jpg")
+	file, err := os.Open(filePath)
+	if err != nil {
+		http.Error(w, "File not found.", http.StatusNotFound)
+		log.Printf("Error opening file: %v", err)
+		return
+	}
+	defer file.Close()
+
+	fileBytes, err := io.ReadAll(file)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		log.Printf("Error reading file: %v", err)
+		return
+	}
+
+	w.Header().Set("Content-Type", "image/jpeg")
+	w.WriteHeader(http.StatusOK)
+	w.Write(fileBytes)
 }
 
 func APIRootHandler(w http.ResponseWriter, r *http.Request) {
