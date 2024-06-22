@@ -1,0 +1,36 @@
+name: CI/CD Pipeline
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v2
+
+    - name: Set up Go
+      uses: actions/setup-go@v2
+      with:
+        go-version: 1.16
+
+    - name: Build
+      run: go build -o imageapi main.go
+
+    - name: Deploy to Server
+      env:
+        SERVER_IP: ${{ secrets.SERVER_IP }}
+        SSH_USER: ${{ secrets.SSH_USER }}
+        SSH_KEY: ${{ secrets.SSH_KEY }}
+      run: |
+        scp -o StrictHostKeyChecking=no -i $SSH_KEY imageapi $SSH_USER@$SERVER_IP:/root/ImageApi/imageapi
+        ssh -o StrictHostKeyChecking=no -i $SSH_KEY $SSH_USER@$SERVER_IP << 'EOF'
+        pkill imageapi || true
+        cd /root/ImageApi
+        ./imageapi &
+        EOF
+
