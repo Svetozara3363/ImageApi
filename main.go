@@ -34,10 +34,9 @@ func main() {
 	router := mux.NewRouter()
 	router.HandleFunc("/", HomeHandler)
 	router.HandleFunc("/upload", UploadHandler).Methods("POST")
-	router.HandleFunc("/pictures", GetPictureHandler).Methods("GET")
+	router.PathPrefix("/uploads/").Handler(http.StripPrefix("/uploads/", http.FileServer(http.Dir(uploadDir))))
 	router.HandleFunc("/api/", APIRootHandler)
 	router.HandleFunc("/api/upload", UploadHandler).Methods("POST")
-	router.HandleFunc("/api/pictures", GetPictureHandler).Methods("GET")
 
 	c := cors.New(cors.Options{
 		AllowedOrigins: []string{"*"},
@@ -84,7 +83,7 @@ func UploadHandler(w http.ResponseWriter, r *http.Request) {
 	defer file.Close()
 
 	log.Printf("Uploading file: %s", handler.Filename)
-	filePath := filepath.Join(uploadDir, "uploaded_image.jpg")
+	filePath := filepath.Join(uploadDir, handler.Filename)
 	f, err := os.Create(filePath)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -103,29 +102,7 @@ func UploadHandler(w http.ResponseWriter, r *http.Request) {
 	log.Printf("File uploaded successfully")
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
-	w.Write([]byte(`{"message": "File uploaded successfully"}`))
-}
-
-func GetPictureHandler(w http.ResponseWriter, r *http.Request) {
-	filePath := filepath.Join(uploadDir, "uploaded_image.jpg")
-	file, err := os.Open(filePath)
-	if err != nil {
-		http.Error(w, "File not found.", http.StatusNotFound)
-		log.Printf("Error opening file: %v", err)
-		return
-	}
-	defer file.Close()
-
-	fileBytes, err := io.ReadAll(file)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		log.Printf("Error reading file: %v", err)
-		return
-	}
-
-	w.Header().Set("Content-Type", "image/jpeg")
-	w.WriteHeader(http.StatusOK)
-	w.Write(fileBytes)
+	w.Write([]byte(`{"message": "File uploaded successfully", "path": "/uploads/` + handler.Filename + `"}`))
 }
 
 func APIRootHandler(w http.ResponseWriter, r *http.Request) {
