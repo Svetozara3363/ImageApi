@@ -1,7 +1,6 @@
 package main
 
 import (
-	"encoding/json"
 	"io"
 	"log"
 	"net/http"
@@ -102,9 +101,9 @@ func UploadHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	log.Printf("File uploaded successfully")
-	response := map[string]string{"imageUrl": "/uploads/uploaded_image.jpg"}
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(response)
+	w.WriteHeader(http.StatusOK)
+	w.Write([]byte(`{"message": "File uploaded successfully"}`))
 }
 
 func GetPictureHandler(w http.ResponseWriter, r *http.Request) {
