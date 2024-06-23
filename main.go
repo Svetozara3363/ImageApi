@@ -130,5 +130,5 @@ func GetPictureHandler(w http.ResponseWriter, r *http.Request) {
 
 func APIRootHandler(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
-	w.Write([]byte("API is working"))
+	w.Write([]byte("API is working-"))
 }
