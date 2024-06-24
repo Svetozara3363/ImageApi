@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/json"
 	"io"
 	"log"
 	"net/http"
@@ -100,10 +101,13 @@ func UploadHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	log.Printf("File uploaded successfully")
+	imageUrl := "/uploads/uploaded_image.jpg"
+	response := map[string]string{"imageUrl": imageUrl}
+
+	log.Printf("File uploaded successfully, URL: %s", imageUrl)
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
-	w.Write([]byte(`{"message": "File uploaded successfully"}`))
+	json.NewEncoder(w).Encode(response)
 }
 
 func GetPictureHandler(w http.ResponseWriter, r *http.Request) {
@@ -130,5 +134,5 @@ func GetPictureHandler(w http.ResponseWriter, r *http.Request) {
 
 func APIRootHandler(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
-	w.Write([]byte("API is working-"))
+	w.Write([]byte("API is working"))
 }
