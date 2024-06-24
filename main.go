@@ -72,7 +72,7 @@ func HomeHandler(w http.ResponseWriter, r *http.Request) {
             <button type="submit">Upload</button>
         </form>
         <h1>Uploaded Image</h1>
-        <img src="/uploads/` + staticImageName + `" alt="Uploaded Image"/>
+        <img src="/uploads/uploaded_image.jpg" alt="Uploaded Image"/>
     </body>
     </html>`
 	w.Write([]byte(html))
