@@ -13,6 +13,7 @@ import (
 )
 
 const uploadDir = "./uploads"
+const staticImageName = "uploaded_image.jpg"
 
 func main() {
 	log.Println("Starting application")
@@ -39,6 +40,7 @@ func main() {
 	router.HandleFunc("/api/", APIRootHandler)
 	router.HandleFunc("/api/upload", UploadHandler).Methods("POST")
 	router.HandleFunc("/api/pictures", GetPictureHandler).Methods("GET")
+	router.PathPrefix("/uploads/").Handler(http.StripPrefix("/uploads/", http.FileServer(http.Dir(uploadDir))))
 
 	c := cors.New(cors.Options{
 		AllowedOrigins: []string{"*"},
@@ -69,6 +71,8 @@ func HomeHandler(w http.ResponseWriter, r *http.Request) {
             <input type="file" name="picture" accept="image/*" required>
             <button type="submit">Upload</button>
         </form>
+        <h1>Uploaded Image</h1>
+        <img src="/uploads/` + staticImageName + `" alt="Uploaded Image"/>
     </body>
     </html>`
 	w.Write([]byte(html))
@@ -85,7 +89,7 @@ func UploadHandler(w http.ResponseWriter, r *http.Request) {
 	defer file.Close()
 
 	log.Printf("Uploading file: %s", handler.Filename)
-	filePath := filepath.Join(uploadDir, "uploaded_image.jpg")
+	filePath := filepath.Join(uploadDir, staticImageName)
 	f, err := os.Create(filePath)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -101,7 +105,7 @@ func UploadHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	imageUrl := "/uploads/uploaded_image.jpg"
+	imageUrl := "/uploads/" + staticImageName
 	response := map[string]string{"imageUrl": imageUrl}
 
 	log.Printf("File uploaded successfully, URL: %s", imageUrl)
@@ -111,7 +115,7 @@ func UploadHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func GetPictureHandler(w http.ResponseWriter, r *http.Request) {
-	filePath := filepath.Join(uploadDir, "uploaded_image.jpg")
+	filePath := filepath.Join(uploadDir, staticImageName)
 	file, err := os.Open(filePath)
 	if err != nil {
 		http.Error(w, "File not found.", http.StatusNotFound)
