@@ -1,6 +1,7 @@
 package main
 
 import (
+	"database/sql"
 	"encoding/json"
 	"io"
 	"log"
@@ -9,36 +10,33 @@ import (
 	"path/filepath"
 
 	"github.com/gorilla/mux"
+	_ "github.com/lib/pq"
 	"github.com/rs/cors"
 )
 
-const uploadDir = "./uploads"
-const staticImageName = "uploaded_image.jpg"
+const (
+	uploadDir       = "./uploads"
+	staticImageName = "uploaded_image.jpg"
+	connStr         = "user=username dbname=mydb sslmode=disable"
+)
 
 func main() {
 	log.Println("Starting application")
 
-	logFile, err := os.OpenFile("./myapp.log", os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+	db, err := sql.Open("postgres", connStr)
 	if err != nil {
-		log.Fatalf("Error opening log file: %v", err)
+		log.Fatalf("Error connecting to database: %v", err)
 	}
-	log.SetOutput(logFile)
-	defer logFile.Close()
+	defer db.Close()
 
-	log.Println("Checking upload directory")
 	if _, err := os.Stat(uploadDir); os.IsNotExist(err) {
-		err := os.Mkdir(uploadDir, os.ModePerm)
-		if err != nil {
-			log.Fatalf("Error creating upload directory: %v", err)
-		}
+		os.Mkdir(uploadDir, os.ModePerm)
 	}
 
 	router := mux.NewRouter()
-	router.HandleFunc("/", HomeHandler)
-	router.HandleFunc("/upload", UploadHandler).Methods("POST")
-	router.HandleFunc("/pictures", GetPictureHandler).Methods("GET")
-	router.HandleFunc("/api/", APIRootHandler)
-	router.HandleFunc("/api/upload", UploadHandler).Methods("POST")
+	router.HandleFunc("/api/upload", func(w http.ResponseWriter, r *http.Request) {
+		UploadHandler(w, r, db)
+	}).Methods("POST")
 	router.HandleFunc("/api/pictures", GetPictureHandler).Methods("GET")
 	router.PathPrefix("/uploads/").Handler(http.StripPrefix("/uploads/", http.FileServer(http.Dir(uploadDir))))
 
@@ -56,44 +54,18 @@ func main() {
 	}
 }
 
-func HomeHandler(w http.ResponseWriter, r *http.Request) {
-	html := `
-    <!DOCTYPE html>
-    <html lang="en">
-    <head>
-        <meta charset="UTF-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>Image Upload</title>
-    </head>
-    <body>
-        <h1>Upload an Image</h1>
-        <form action="/upload" method="post" enctype="multipart/form-data">
-            <input type="file" name="picture" accept="image/*" required>
-            <button type="submit">Upload</button>
-        </form>
-        <h1>Uploaded Image</h1>
-        <img src="/uploads/uploaded_image.jpg" alt="Uploaded Image"/>
-    </body>
-    </html>`
-	w.Write([]byte(html))
-}
-
-func UploadHandler(w http.ResponseWriter, r *http.Request) {
-	log.Println("Received upload request")
-	file, handler, err := r.FormFile("picture")
+func UploadHandler(w http.ResponseWriter, r *http.Request, db *sql.DB) {
+	file, _, err := r.FormFile("picture")
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
-		log.Printf("Error getting file from form: %v", err)
 		return
 	}
 	defer file.Close()
 
-	log.Printf("Uploading file: %s", handler.Filename)
 	filePath := filepath.Join(uploadDir, staticImageName)
 	f, err := os.Create(filePath)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
-		log.Printf("Error creating file: %v", err)
 		return
 	}
 	defer f.Close()
@@ -101,16 +73,19 @@ func UploadHandler(w http.ResponseWriter, r *http.Request) {
 	_, err = io.Copy(f, file)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
-		log.Printf("Error copying file: %v", err)
+		return
+	}
+
+	_, err = db.Exec("UPDATE images SET flag=true WHERE id=1")
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
 	imageUrl := "/uploads/" + staticImageName
 	response := map[string]string{"imageUrl": imageUrl}
 
-	log.Printf("File uploaded successfully, URL: %s", imageUrl)
 	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusOK)
 	json.NewEncoder(w).Encode(response)
 }
 
@@ -119,7 +94,6 @@ func GetPictureHandler(w http.ResponseWriter, r *http.Request) {
 	file, err := os.Open(filePath)
 	if err != nil {
 		http.Error(w, "File not found.", http.StatusNotFound)
-		log.Printf("Error opening file: %v", err)
 		return
 	}
 	defer file.Close()
@@ -127,16 +101,9 @@ func GetPictureHandler(w http.ResponseWriter, r *http.Request) {
 	fileBytes, err := io.ReadAll(file)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
-		log.Printf("Error reading file: %v", err)
 		return
 	}
 
 	w.Header().Set("Content-Type", "image/jpeg")
-	w.WriteHeader(http.StatusOK)
 	w.Write(fileBytes)
-}
-
-func APIRootHandler(w http.ResponseWriter, r *http.Request) {
-	w.WriteHeader(http.StatusOK)
-	w.Write([]byte("API is working"))
 }
