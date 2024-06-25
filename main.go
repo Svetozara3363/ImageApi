@@ -1,7 +1,6 @@
 package main
 
 import (
-	"database/sql"
 	"encoding/json"
 	"io"
 	"log"
@@ -10,34 +9,34 @@ import (
 	"path/filepath"
 
 	"github.com/gorilla/mux"
-	_ "github.com/lib/pq"
 	"github.com/rs/cors"
 )
 
-const (
-	uploadDir       = "./uploads"
-	staticImageName = "uploaded_image.jpg"
-	connStr         = "user=username dbname=mydb sslmode=disable"
-)
+const uploadDir = "./uploads"
+const staticImageName = "uploaded_image.jpg"
 
 func main() {
 	log.Println("Starting application")
 
-	db, err := sql.Open("postgres", connStr)
+	logFile, err := os.OpenFile("./myapp.log", os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
 	if err != nil {
-		log.Fatalf("Error connecting to database: %v", err)
+		log.Fatalf("Error opening log file: %v", err)
 	}
-	defer db.Close()
+	log.SetOutput(logFile)
+	defer logFile.Close()
 
+	log.Println("Checking upload directory")
 	if _, err := os.Stat(uploadDir); os.IsNotExist(err) {
-		os.Mkdir(uploadDir, os.ModePerm)
+		err := os.Mkdir(uploadDir, os.ModePerm)
+		if err != nil {
+			log.Fatalf("Error creating upload directory: %v", err)
+		}
 	}
 
 	router := mux.NewRouter()
-	router.HandleFunc("/api/upload", func(w http.ResponseWriter, r *http.Request) {
-		UploadHandler(w, r, db)
-	}).Methods("POST")
+	router.HandleFunc("/api/upload", UploadHandler).Methods("POST")
 	router.HandleFunc("/api/pictures", GetPictureHandler).Methods("GET")
+	router.HandleFunc("/api/pictures", DeletePictureHandler).Methods("DELETE")
 	router.PathPrefix("/uploads/").Handler(http.StripPrefix("/uploads/", http.FileServer(http.Dir(uploadDir))))
 
 	c := cors.New(cors.Options{
@@ -54,18 +53,22 @@ func main() {
 	}
 }
 
-func UploadHandler(w http.ResponseWriter, r *http.Request, db *sql.DB) {
-	file, _, err := r.FormFile("picture")
+func UploadHandler(w http.ResponseWriter, r *http.Request) {
+	log.Println("Received upload request")
+	file, handler, err := r.FormFile("picture")
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
+		log.Printf("Error getting file from form: %v", err)
 		return
 	}
 	defer file.Close()
 
+	log.Printf("Uploading file: %s", handler.Filename)
 	filePath := filepath.Join(uploadDir, staticImageName)
 	f, err := os.Create(filePath)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
+		log.Printf("Error creating file: %v", err)
 		return
 	}
 	defer f.Close()
@@ -73,19 +76,16 @@ func UploadHandler(w http.ResponseWriter, r *http.Request, db *sql.DB) {
 	_, err = io.Copy(f, file)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-
-	_, err = db.Exec("UPDATE images SET flag=true WHERE id=1")
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		log.Printf("Error copying file: %v", err)
 		return
 	}
 
 	imageUrl := "/uploads/" + staticImageName
 	response := map[string]string{"imageUrl": imageUrl}
 
+	log.Printf("File uploaded successfully, URL: %s", imageUrl)
 	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
 	json.NewEncoder(w).Encode(response)
 }
 
@@ -94,6 +94,7 @@ func GetPictureHandler(w http.ResponseWriter, r *http.Request) {
 	file, err := os.Open(filePath)
 	if err != nil {
 		http.Error(w, "File not found.", http.StatusNotFound)
+		log.Printf("Error opening file: %v", err)
 		return
 	}
 	defer file.Close()
@@ -101,9 +102,24 @@ func GetPictureHandler(w http.ResponseWriter, r *http.Request) {
 	fileBytes, err := io.ReadAll(file)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
+		log.Printf("Error reading file: %v", err)
 		return
 	}
 
 	w.Header().Set("Content-Type", "image/jpeg")
 	w.Write(fileBytes)
+}
+
+func DeletePictureHandler(w http.ResponseWriter, r *http.Request) {
+	filePath := filepath.Join(uploadDir, staticImageName)
+	err := os.Remove(filePath)
+	if err != nil {
+		http.Error(w, "File not found.", http.StatusNotFound)
+		log.Printf("Error deleting file: %v", err)
+		return
+	}
+
+	response := map[string]string{"message": "File deleted successfully"}
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(response)
 }
