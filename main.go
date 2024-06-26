@@ -97,9 +97,9 @@ func main() {
 	initDB()
 
 	router := mux.NewRouter()
-	router.HandleFunc("/api/upload", uploadHandler).Methods("POST")
-	router.HandleFunc("/api/picture", getPictureHandler).Methods("GET")
-	router.HandleFunc("/api/picture", deletePictureHandler).Methods("DELETE")
+	router.HandleFunc("/upload", uploadHandler).Methods("POST")
+	router.HandleFunc("/picture", getPictureHandler).Methods("GET")
+	router.HandleFunc("/picture", deletePictureHandler).Methods("DELETE")
 
 	fmt.Println("Starting server at :8080")
 	log.Fatal(http.ListenAndServe(":8080", router))
