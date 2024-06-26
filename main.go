@@ -1,19 +1,24 @@
 package main
 
 import (
+	"database/sql"
+	"encoding/base64"
 	"encoding/json"
 	"io"
 	"log"
 	"net/http"
 	"os"
-	"path/filepath"
 
 	"github.com/gorilla/mux"
+	_ "github.com/lib/pq"
 	"github.com/rs/cors"
 )
 
-const uploadDir = "./uploads"
-const staticImageName = "uploaded_image.jpg"
+const (
+	dbConnString = "user=yourusername password=yourpassword dbname=yourdbname sslmode=disable"
+)
+
+var db *sql.DB
 
 func main() {
 	log.Println("Starting application")
@@ -25,19 +30,17 @@ func main() {
 	log.SetOutput(logFile)
 	defer logFile.Close()
 
-	log.Println("Checking upload directory")
-	if _, err := os.Stat(uploadDir); os.IsNotExist(err) {
-		err := os.Mkdir(uploadDir, os.ModePerm)
-		if err != nil {
-			log.Fatalf("Error creating upload directory: %v", err)
-		}
+	// Open database connection
+	db, err = sql.Open("postgres", dbConnString)
+	if err != nil {
+		log.Fatalf("Error connecting to database: %v", err)
 	}
+	defer db.Close()
 
 	router := mux.NewRouter()
 	router.HandleFunc("/api/upload", UploadHandler).Methods("POST")
 	router.HandleFunc("/api/pictures", GetPictureHandler).Methods("GET")
 	router.HandleFunc("/api/pictures", DeletePictureHandler).Methods("DELETE")
-	router.PathPrefix("/uploads/").Handler(http.StripPrefix("/uploads/", http.FileServer(http.Dir(uploadDir))))
 
 	c := cors.New(cors.Options{
 		AllowedOrigins: []string{"*"},
@@ -63,43 +66,6 @@ func UploadHandler(w http.ResponseWriter, r *http.Request) {
 	}
 	defer file.Close()
 
-	log.Printf("Uploading file: %s", handler.Filename)
-	filePath := filepath.Join(uploadDir, staticImageName)
-	f, err := os.Create(filePath)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		log.Printf("Error creating file: %v", err)
-		return
-	}
-	defer f.Close()
-
-	_, err = io.Copy(f, file)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		log.Printf("Error copying file: %v", err)
-		return
-	}
-
-	imageUrl := "/uploads/" + staticImageName
-	response := map[string]string{"imageUrl": imageUrl}
-
-	log.Printf("File uploaded successfully, URL: %s", imageUrl)
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusOK)
-	json.NewEncoder(w).Encode(response)
-}
-
-func GetPictureHandler(w http.ResponseWriter, r *http.Request) {
-	log.Println("Received request for picture")
-	filePath := filepath.Join(uploadDir, staticImageName)
-	file, err := os.Open(filePath)
-	if err != nil {
-		http.Error(w, "File notе found.", http.StatusNotFound)
-		log.Printf("Error opening file: %v", err)
-		return
-	}
-	defer file.Close()
-
 	fileBytes, err := io.ReadAll(file)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -107,17 +73,50 @@ func GetPictureHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	encodedImage := base64.StdEncoding.EncodeToString(fileBytes)
+
+	_, err = db.Exec("INSERT INTO pictures (name, data) VALUES ($1, $2)", handler.Filename, encodedImage)
+	if err != nil {
+		http.Error(w, "Error saving image to database.", http.StatusInternalServerError)
+		log.Printf("Error saving image to database: %v", err)
+		return
+	}
+
+	log.Println("File uploaded successfully")
+	response := map[string]string{"message": "File uploaded successfully"}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	json.NewEncoder(w).Encode(response)
+}
+
+func GetPictureHandler(w http.ResponseWriter, r *http.Request) {
+	log.Println("Received request for picture")
+	var name, data string
+
+	err := db.QueryRow("SELECT name, data FROM pictures ORDER BY id DESC LIMIT 1").Scan(&name, &data)
+	if err != nil {
+		http.Error(w, "File not found.", http.StatusNotFound)
+		log.Printf("Error fetching image from database: %v", err)
+		return
+	}
+
+	imageData, err := base64.StdEncoding.DecodeString(data)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		log.Printf("Error decoding image data: %v", err)
+		return
+	}
+
 	w.Header().Set("Content-Type", "image/jpeg")
-	w.Write(fileBytes)
+	w.Write(imageData)
 }
 
 func DeletePictureHandler(w http.ResponseWriter, r *http.Request) {
 	log.Println("Received request to delete picture")
-	filePath := filepath.Join(uploadDir, staticImageName)
-	err := os.Remove(filePath)
+	_, err := db.Exec("DELETE FROM pictures WHERE id = (SELECT id FROM pictures ORDER BY id DESC LIMIT 1)")
 	if err != nil {
 		http.Error(w, "File not found.", http.StatusNotFound)
-		log.Printf("Error deleting file: %v", err)
+		log.Printf("Error deleting image from database: %v", err)
 		return
 	}
 
