@@ -15,7 +15,7 @@ import (
 )
 
 const (
-	dbConnString = "user=yourusername password=yourpassword dbname=yourdbname sslmode=disable"
+	dbConnString = "user=myuser password=yourpassword dbname=mydb sslmode=disable"
 )
 
 var db *sql.DB
@@ -30,7 +30,6 @@ func main() {
 	log.SetOutput(logFile)
 	defer logFile.Close()
 
-	// Open database connection
 	db, err = sql.Open("postgres", dbConnString)
 	if err != nil {
 		log.Fatalf("Error connecting to database: %v", err)
@@ -93,7 +92,7 @@ func GetPictureHandler(w http.ResponseWriter, r *http.Request) {
 	log.Println("Received request for picture")
 	var name, data string
 
-	err := db.QueryRow("SELECT name, data FROM pictures ORDER BY id DESC LIMIT 1").Scan(&name, &data)
+	err := db.QueryRow("SELECT name, data FROM pictures ORDER BY name DESC LIMIT 1").Scan(&name, &data)
 	if err != nil {
 		http.Error(w, "File not found.", http.StatusNotFound)
 		log.Printf("Error fetching image from database: %v", err)
@@ -113,9 +112,17 @@ func GetPictureHandler(w http.ResponseWriter, r *http.Request) {
 
 func DeletePictureHandler(w http.ResponseWriter, r *http.Request) {
 	log.Println("Received request to delete picture")
-	_, err := db.Exec("DELETE FROM pictures WHERE id = (SELECT id FROM pictures ORDER BY id DESC LIMIT 1)")
+	var name string
+	err := db.QueryRow("SELECT name FROM pictures ORDER BY name DESC LIMIT 1").Scan(&name)
 	if err != nil {
 		http.Error(w, "File not found.", http.StatusNotFound)
+		log.Printf("Error fetching image name from database: %v", err)
+		return
+	}
+
+	_, err = db.Exec("DELETE FROM pictures WHERE name = $1", name)
+	if err != nil {
+		http.Error(w, "Error deleting image from database.", http.StatusInternalServerError)
 		log.Printf("Error deleting image from database: %v", err)
 		return
 	}
