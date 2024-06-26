@@ -101,6 +101,6 @@ func main() {
 	router.HandleFunc("/picture", getPictureHandler).Methods("GET")
 	router.HandleFunc("/picture", deletePictureHandler).Methods("DELETE")
 
-	fmt.Println("Starting server at :8080")
+	fmt.Println("Starting serveуr at :8080")
 	log.Fatal(http.ListenAndServe(":8080", router))
 }
