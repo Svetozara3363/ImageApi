@@ -15,8 +15,8 @@ import (
 const (
 	host     = "localhost"
 	port     = 5432
-	user     = "yourusername"
-	password = "yourpassword"
+	user     = "myuser"
+	password = "Sveta.2003"
 	dbname   = "mydb"
 )
 
