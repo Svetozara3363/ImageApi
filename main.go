@@ -90,6 +90,7 @@ func UploadHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func GetPictureHandler(w http.ResponseWriter, r *http.Request) {
+	log.Println("Received request for picture")
 	filePath := filepath.Join(uploadDir, staticImageName)
 	file, err := os.Open(filePath)
 	if err != nil {
@@ -111,6 +112,7 @@ func GetPictureHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func DeletePictureHandler(w http.ResponseWriter, r *http.Request) {
+	log.Println("Received request to delete picture")
 	filePath := filepath.Join(uploadDir, staticImageName)
 	err := os.Remove(filePath)
 	if err != nil {
