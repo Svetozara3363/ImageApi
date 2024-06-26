@@ -94,7 +94,7 @@ func GetPictureHandler(w http.ResponseWriter, r *http.Request) {
 	filePath := filepath.Join(uploadDir, staticImageName)
 	file, err := os.Open(filePath)
 	if err != nil {
-		http.Error(w, "File not found.", http.StatusNotFound)
+		http.Error(w, "File notе found.", http.StatusNotFound)
 		log.Printf("Error opening file: %v", err)
 		return
 	}
