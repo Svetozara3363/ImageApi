@@ -10,6 +10,7 @@ import (
 
 	"github.com/gorilla/mux"
 	_ "github.com/lib/pq"
+	"github.com/rs/cors"
 )
 
 const (
@@ -97,10 +98,18 @@ func main() {
 	initDB()
 
 	router := mux.NewRouter()
-	router.HandleFunc("/upload", uploadHandler).Methods("POST")
-	router.HandleFunc("/picture", getPictureHandler).Methods("GET")
-	router.HandleFunc("/picture", deletePictureHandler).Methods("DELETE")
+	router.HandleFunc("/api/upload", uploadHandler).Methods("POST")
+	router.HandleFunc("/api/picture", getPictureHandler).Methods("GET")
+	router.HandleFunc("/api/picture", deletePictureHandler).Methods("DELETE")
 
-	fmt.Println("Starting serveуr at :8080")
-	log.Fatal(http.ListenAndServe(":8080", router))
+	c := cors.New(cors.Options{
+		AllowedOrigins:   []string{"https://dokalab.com"},
+		AllowedMethods:   []string{"GET", "POST", "DELETE"},
+		AllowedHeaders:   []string{"Content-Type"},
+		AllowCredentials: true,
+	})
+
+	handler := c.Handler(router)
+	fmt.Println("Starting server at :8080")
+	log.Fatal(http.ListenAndServe(":8080", handler))
 }
