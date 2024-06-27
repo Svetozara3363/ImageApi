@@ -42,6 +42,7 @@ func initDB() {
 func uploadHandler(w http.ResponseWriter, r *http.Request) {
 	file, _, err := r.FormFile("file")
 	if err != nil {
+		log.Printf("Error getting form file: %v", err)
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
@@ -49,6 +50,7 @@ func uploadHandler(w http.ResponseWriter, r *http.Request) {
 
 	fileBytes, err := ioutil.ReadAll(file)
 	if err != nil {
+		log.Printf("Error reading file: %v", err)
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
@@ -56,10 +58,12 @@ func uploadHandler(w http.ResponseWriter, r *http.Request) {
 	fileBase64 := base64.StdEncoding.EncodeToString(fileBytes)
 	_, err = db.Exec("INSERT INTO pictures (name, data) VALUES ($1, $2)", "uploaded_image", fileBase64)
 	if err != nil {
+		log.Printf("Error inserting into database: %v", err)
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
+	log.Printf("Successfully uploaded image")
 	w.WriteHeader(http.StatusOK)
 }
 
@@ -68,8 +72,10 @@ func getPictureHandler(w http.ResponseWriter, r *http.Request) {
 	err := db.QueryRow("SELECT data FROM pictures WHERE name = $1", "uploaded_image").Scan(&data)
 	if err != nil {
 		if err == sql.ErrNoRows {
+			log.Printf("No image found in database")
 			http.Error(w, "No image found", http.StatusNotFound)
 		} else {
+			log.Printf("Error querying database: %v", err)
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 		}
 		return
@@ -77,10 +83,12 @@ func getPictureHandler(w http.ResponseWriter, r *http.Request) {
 
 	fileBytes, err := base64.StdEncoding.DecodeString(data)
 	if err != nil {
+		log.Printf("Error decoding base64 data: %v", err)
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
+	log.Printf("Successfully retrieved image")
 	w.Header().Set("Content-Type", "image/jpeg")
 	w.Write(fileBytes)
 }
@@ -88,9 +96,11 @@ func getPictureHandler(w http.ResponseWriter, r *http.Request) {
 func deletePictureHandler(w http.ResponseWriter, r *http.Request) {
 	_, err := db.Exec("DELETE FROM pictures WHERE name = $1", "uploaded_image")
 	if err != nil {
+		log.Printf("Error deleting from database: %v", err)
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
+	log.Printf("Successfully deleted image")
 	w.WriteHeader(http.StatusOK)
 }
 
