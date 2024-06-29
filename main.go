@@ -113,7 +113,7 @@ func main() {
 	router.HandleFunc("/delete", deletePictureHandler).Methods("DELETE")
 
 	c := cors.New(cors.Options{
-		AllowedOrigins: []string{"http://dokalab.com", "https://dokalab.com"},
+		AllowedOrigins: []string{"https://dokalab.com", "https://dokalab.com"},
 		AllowedMethods: []string{"GET", "POST", "DELETE"},
 		AllowedHeaders: []string{"Content-Type"},
 	})
