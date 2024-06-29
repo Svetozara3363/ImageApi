@@ -109,14 +109,15 @@ func main() {
 
 	router := mux.NewRouter()
 	router.HandleFunc("/upload", uploadHandler).Methods("POST")
-	router.HandleFunc("/picture", getPictureHandler).Methods("GET")
-	router.HandleFunc("/delete_picture", deletePictureHandler).Methods("DELETE")
+	router.HandleFunc("/pictures", getPictureHandler).Methods("GET")
+	router.HandleFunc("/delete", deletePictureHandler).Methods("DELETE")
 
 	c := cors.New(cors.Options{
 		AllowedOrigins: []string{"http://dokalab.com", "https://dokalab.com"},
 		AllowedMethods: []string{"GET", "POST", "DELETE"},
 		AllowedHeaders: []string{"Content-Type"},
 	})
+
 	handler := c.Handler(router)
 	fmt.Println("Starting server at :8080")
 	log.Fatal(http.ListenAndServe(":8080", handler))
