@@ -2,11 +2,12 @@ package main
 
 import (
 	"database/sql"
-	"encoding/base64"
 	"fmt"
 	"io/ioutil"
 	"log"
 	"net/http"
+	"os"
+	"path/filepath"
 
 	"github.com/gorilla/mux"
 	_ "github.com/lib/pq"
@@ -40,7 +41,7 @@ func initDB() {
 }
 
 func uploadHandler(w http.ResponseWriter, r *http.Request) {
-	file, _, err := r.FormFile("file")
+	file, header, err := r.FormFile("file")
 	if err != nil {
 		log.Printf("Error getting form file: %v", err)
 		http.Error(w, err.Error(), http.StatusBadRequest)
@@ -55,10 +56,26 @@ func uploadHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	fileBase64 := base64.StdEncoding.EncodeToString(fileBytes)
-	_, err = db.Exec("INSERT INTO pictures (name, data) VALUES ($1, $2)", "uploaded_image", fileBase64)
+	imageName := "uploaded_image"
+
+	_, err = db.Exec("DELETE FROM pictures WHERE name = $1", imageName)
+	if err != nil {
+		log.Printf("Error deleting old image: %v", err)
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	_, err = db.Exec("INSERT INTO pictures (name, data) VALUES ($1, $2)", imageName, fileBytes)
 	if err != nil {
 		log.Printf("Error inserting into database: %v", err)
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	savePath := filepath.Join("uploads", header.Filename)
+	err = ioutil.WriteFile(savePath, fileBytes, 0644)
+	if err != nil {
+		log.Printf("Error saving file to server: %v", err)
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
@@ -68,7 +85,7 @@ func uploadHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func getPictureHandler(w http.ResponseWriter, r *http.Request) {
-	var data string
+	var data []byte
 	err := db.QueryRow("SELECT data FROM pictures WHERE name = $1", "uploaded_image").Scan(&data)
 	if err != nil {
 		if err == sql.ErrNoRows {
@@ -81,16 +98,9 @@ func getPictureHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	fileBytes, err := base64.StdEncoding.DecodeString(data)
-	if err != nil {
-		log.Printf("Error decoding base64 data: %v", err)
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-
 	log.Printf("Successfully retrieved image")
 	w.Header().Set("Content-Type", "image/jpeg")
-	w.Write(fileBytes)
+	w.Write(data)
 }
 
 func deletePictureHandler(w http.ResponseWriter, r *http.Request) {
@@ -100,20 +110,30 @@ func deletePictureHandler(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
+
+	savePath := filepath.Join("uploads", "uploaded_image.jpg")
+	err = os.Remove(savePath)
+	if err != nil {
+		log.Printf("Error deleting file from server: %v", err)
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
 	log.Printf("Successfully deleted image")
 	w.WriteHeader(http.StatusOK)
 }
 
 func main() {
 	initDB()
+	os.Mkdir("uploads", os.ModePerm)
 
 	router := mux.NewRouter()
-	router.HandleFunc("/upload", uploadHandler).Methods("POST")
-	router.HandleFunc("/pictures", getPictureHandler).Methods("GET")
-	router.HandleFunc("/delete", deletePictureHandler).Methods("DELETE")
+	router.HandleFunc("/api/upload", uploadHandler).Methods("POST")
+	router.HandleFunc("/api/pictures", getPictureHandler).Methods("GET")
+	router.HandleFunc("/api/delete", deletePictureHandler).Methods("DELETE")
 
 	c := cors.New(cors.Options{
-		AllowedOrigins: []string{"https://dokalab.com", "https://dokalab.com"},
+		AllowedOrigins: []string{"https://dokalab.com"},
 		AllowedMethods: []string{"GET", "POST", "DELETE"},
 		AllowedHeaders: []string{"Content-Type"},
 	})
