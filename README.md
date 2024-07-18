@@ -10,7 +10,7 @@
   - `400 Bad Request` in case of error
 
 ### Get Image
-- **URL:** curl -X GET https://dokalab.com/photoupload1 --output image.jpg
+- **URL:** curl -X GET https://dokalab.com/api/photoupload1 --output image.jpg
 
 - **Method:** `GET`
 - **Response:**
