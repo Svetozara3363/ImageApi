@@ -1,7 +1,7 @@
 ## API Endpoints
 
 ### Upload Image
-- **URL:** curl -X POST https://dokalab.com/api/upload -F "file=@path/to/your/image.jpg"
+- **URL:** curl -X POST https://dokalab.com/api/photoupload1 -F "file=@path/to/your/image.jpg"
 
 
 - **Method:** `POST`
@@ -10,7 +10,7 @@
   - `400 Bad Request` in case of error
 
 ### Get Image
-- **URL:** curl -X GET https://dokalab.com/api/photoupload1 --output image.jpg
+- **URL:** curl -X GET https://dokalab.com/api/pictures --output image.jpg
 
 - **Method:** `GET`
 - **Response:**
